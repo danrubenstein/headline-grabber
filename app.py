@@ -57,7 +57,7 @@ def webhook():
 
                     log(r) 
                     if r.status_code == 200:
-                        for count, news_story in enumerate(r.articles):
+                        for count, news_story in enumerate(r.json()['articles']):
                             response += (str(count) + ")" + news_story[title] + ": " + news_story[url])
                         send_message(sender_id, response)
                     else:
