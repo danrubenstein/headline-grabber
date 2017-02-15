@@ -55,7 +55,7 @@ def webhook():
 
                     r = requests.get("https://newsapi.org/v1/articles", params=params)
 
-                    print r 
+                    log(r) 
                     if r.status_code == 200:
                         for count, news_story in enumerate(r.articles):
                             response += (str(count) + ")" + news_story[title] + ": " + news_story[url])
