@@ -39,8 +39,6 @@ def webhook():
                     recipient_id = messaging_event["recipient"]["id"]  # the recipient's ID, which should be your page's facebook ID
                     message_text = messaging_event["message"]["text"]  # the message's text
 
-                    send_message(sender_id, "got it, thanks!")
-
                     source = ""
                     ## Various News Outlets
                     if "NYT" in message_text:
@@ -49,7 +47,7 @@ def webhook():
 
                     params = {
                         "source": source, 
-                        "api_key" : os.environ["NEWS_API_KEY"], 
+                        "apiKey" : os.environ["NEWS_API_KEY"], 
                         "sortBy" : "top"
                     }
 
