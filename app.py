@@ -40,6 +40,7 @@ def webhook():
                     message_text = messaging_event["message"]["text"]  # the message's text
 
                     source = ""
+
                     ## Various News Outlets
                     if "NYT" in message_text:
                         source="the-new-york-times"
@@ -58,6 +59,7 @@ def webhook():
                 
                     if r.status_code == 200:
                         for count, news_story in enumerate(r.json()['articles'][:5]):
+                            log(news_story)
                             response += (str(count) + ")" + news_story['title'] + ": " + news_story['url'])
                         send_message(sender_id, response)
                     else:
