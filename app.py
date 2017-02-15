@@ -61,8 +61,8 @@ def webhook():
                     if r.status_code == 200:
                         for count, news_story in enumerate(r.json()['articles'][:5]):
                             log(news_story)
-                            response += (str(count).encode("utf-8") + ")" + (news_story['title']) + ": " + (news_story['url']))
-                        send_message(sender_id, response)
+                            response + (str(count+1).encode("utf-8") + ") " + (news_story['title']) + ": " + (news_story['url']))
+                            send_message(sender_id, response)
                     else:
                         log(r.status_code)
                         log(r.text)
@@ -106,7 +106,7 @@ def send_message(recipient_id, message_text):
             "id": recipient_id
         },
         "message": {
-            "text": message_text[:400]
+            "text": message_text
         }
     })
     r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
