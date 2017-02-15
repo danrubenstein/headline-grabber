@@ -48,27 +48,29 @@ def webhook():
 
 
                     params = {
-                        "source": source
-                        "api_key" : os.environ["NEWS_API_KEY"]
+                        "source": source, 
+                        "api_key" : os.environ["NEWS_API_KEY"], 
                         "sortBy" : "top"
                     }
 
                     response = ""
 
                     r = requests.get("https://newsapi.org/v1/articles", params=params)
+
                     if r.status_code == 200:
                         for count, news_story in enumerate(r.articles):
-                            response += (str(count) + ")" + news_story[title] + ": " + 
-                                news_story[url]
-
-                    send_message(sender_id, response)
-
-
-
+                            response += (str(count) + ")" + news_story[title] + ": " + news_story[url])
+                        send_message(sender_id, response)
                     else:
                         log(r.status_code)
                         log(r.text)
+                        send_message(sender_id, "Sorry, there was a problem")
 
+                    
+
+
+
+                    
 
 
 
