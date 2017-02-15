@@ -26,7 +26,7 @@ def webhook():
     # endpoint for processing incoming messaging events
 
     data = request.get_json()
-    log(data)  # you may not want to log every incoming message in production, but it's good for testing
+    # log(data)  # you may not want to log every incoming message in production, but it's good for testing
 
     if data["object"] == "page":
 
@@ -40,6 +40,37 @@ def webhook():
                     message_text = messaging_event["message"]["text"]  # the message's text
 
                     send_message(sender_id, "got it, thanks!")
+
+                    source = ""
+                    ## Various News Outlets
+                    if "NYT" in message_text:
+                        source="the-new-york-times"
+
+
+                    params = {
+                        "source": source
+                        "api_key" : os.environ["NEWS_API_KEY"]
+                        "sortBy" : "top"
+                    }
+
+                    response = ""
+
+                    r = requests.get("https://newsapi.org/v1/articles", params=params)
+                    if r.status_code == 200:
+                        for count, news_story in enumerate(r.articles):
+                            response += (str(count) + ")" + news_story[title] + ": " + 
+                                news_story[url]
+
+                    send_message(sender_id, response)
+
+
+
+                    else:
+                        log(r.status_code)
+                        log(r.text)
+
+
+
 
                 if messaging_event.get("delivery"):  # delivery confirmation
                     pass
