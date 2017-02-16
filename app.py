@@ -6,8 +6,14 @@ import json
 import requests
 from flask import Flask, request
 
+from bs4 import BeautifulSoup
+
 app = Flask(__name__)
 
+# valid URLS for searching for things
+sources = json.load(open("sources.json"))["sources"]
+
+urls_dict = {x["url"]: x["id"] for x in sources}
 
 @app.route('/', methods=['GET'])
 def verify():
@@ -43,30 +49,35 @@ def webhook():
                     source = u""
 
                     ## Various News Outlets
-                    if "NYT" in message_text:
-                        source="the-new-york-times"
 
+                    source = get_source(message_text)
 
-                    params = {
-                        "source": source, 
-                        "apiKey" : os.environ["NEWS_API_KEY"], 
-                        "sortBy" : "top"
-                    }
+                    if source != None:
 
-                    response = ""
+                        params = {
+                            "source": source, 
+                            "apiKey" : os.environ["NEWS_API_KEY"], 
+                            "sortBy" : "top"
+                        }
 
-                    r = requests.get("https://newsapi.org/v1/articles", params=params)
+                        response = ""
 
-                    
-                    if r.status_code == 200:
-                        for count, news_story in enumerate(r.json()['articles'][:5]):
-                            log(news_story)
-                            response = (str(count+1).encode("utf-8") + ") " + (news_story['title']) + ": " + (news_story['url']))
-                            send_message(sender_id, response)
+                        r = requests.get("https://newsapi.org/v1/articles", params=params)
+
+                        
+                        if r.status_code == 200:
+                            for count, news_story in enumerate(r.json()['articles'][:5]):
+                                log(news_story)
+                                response = (str(count+1).encode("utf-8") + ") " + (news_story['title']) + ": " + (news_story['url']))
+                                send_message(sender_id, response)
+                        else:
+                            log(r.status_code)
+                            log(r.text)
+                            send_message(sender_id, "Sorry, there was a problem")
+
                     else:
-                        log(r.status_code)
-                        log(r.text)
-                        send_message(sender_id, "Sorry, there was a problem")
+
+                        send_message(sender_id, "Sorry, we couldn't find that for you")
 
                     
 
@@ -119,6 +130,50 @@ def log(message):  # simple wrapper for logging to stdout on heroku
     print str(message)
     sys.stdout.flush()
 
+def get_source(message_text):
+    ''' 
+    Gets the 
+    ''' 
+    words = message_text.split()
+
+    for word in words:
+        first_url = get_google_search_result(word)
+        if first_url == None:
+            pass 
+        else:
+            log(word, first_url)
+            if first_url in urls:
+                return urls_dict[first_url]
+
+    return None
+
+
+def get_google_search_result(search_term):
+    '''
+    Simple function that allows for one word google searches and 
+    returns the first URL that is found 
+    ''' 
+
+
+    search_parameters = {
+        "q" : search_term
+    }
+
+    search_url = "https://www.google.com/search"
+
+    r = requests.get(search_url, params=search_parameters)
+
+    if r.status_code != 200:
+        log("Bad search query")
+        return None
+
+    soup = BeautifulSoup(r.text, "html.parser")
+    first_url = soup.find('cite').text
+
+    return first_url
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
