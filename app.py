@@ -77,7 +77,8 @@ def webhook():
 
                     elif "help" in message_text.lower():
 
-                        response = "Welcome to Headline Grabber! Get the top news stories from your favorite sites - type one in, or type \"sources\" to see what sources are available"
+                        response = "Welcome to Headline Grabber! Get the top news stories from your favorite sites - type one in, or type \"sources\" to see what sources are available \n\n \
+                            Powered by newsapi.org"
 
                         send_message(sender_id, response)
 
@@ -172,6 +173,7 @@ def get_google_search_result(search_term):
 
     if r.status_code != 200:
         log("Bad search query")
+        log(r.status_code)
         return None
 
     soup = BeautifulSoup(r.text, "html.parser")
