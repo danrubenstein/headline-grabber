@@ -149,6 +149,7 @@ def get_source(message_text):
                 for part in url:
                     for key in urls_dict.keys():
                         if part in key:
+                            log("returning id: {}".format(urls_dict[key]))
                             return urls_dict[key]
 
     return None
