@@ -14,6 +14,7 @@ app = Flask(__name__)
 sources = json.load(open("sources.json"))["sources"]
 
 urls_dict = {x["url"].split("/")[2]: x["id"] for x in sources}
+source_names = [x["name"] for x in sources]
 
 @app.route('/', methods=['GET'])
 def verify():
@@ -74,8 +75,21 @@ def webhook():
                             log(r.text)
                             send_message(sender_id, "Sorry, there was a problem")
 
+                    elif "help" in message_text.lower():
+
+                        response = "Welcome to Headline Grabber! Get the top news stories from your favorite sites - type one in, or type \"sources\" to see what sources are available"
+
+                        send_message(sender_id, response)
+
+                    elif "sources" in message_text.lower():
+
+                        response = "WSJ"
+
+                        send_message(sender_id, response)
                     else:
-                        send_message(sender_id, "Sorry, we couldn't find that for you")
+                        
+                        response = "Sorry, we couldn't find that for you - type \"help\" or \"sources\" to keep going."
+                        send_message(sender_id, response)
 
     
 
@@ -136,8 +150,9 @@ def get_source(message_text):
             for url in url_parts:
                 log("{} : {}".format(word, "".join(url)))
                 for part in url:
-                    if part in urls_dict.keys():
-                        return urls_dict[part]
+                    for key in urls_dict.keys():
+                        if part in key:
+                            return urls_dict[key]
 
     return None
 
