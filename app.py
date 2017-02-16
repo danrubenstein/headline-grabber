@@ -43,14 +43,14 @@ def webhook():
 
                 if messaging_event.get("message"):  # someone sent us a message
 
-                    sender_id = messaging_event["sender"]["id"]        # the facebook ID of the person sending you the message
-                    recipient_id = messaging_event["recipient"]["id"]  # the recipient's ID, which should be your page's facebook ID
-                    message_text = messaging_event["message"]["text"]  # the message's text
+                    sender_id = messaging_event["sender"]["id"]
+                    recipient_id = messaging_event["recipient"]["id"]  
+                    message_text = messaging_event["message"]["text"]  
+
                     
                     if "help" in message_text.lower():
 
-                        response = "Welcome to Headline Grabber! Get the top news stories from your favorite sites - type one in, or type \"sources\" to see what sources are available \n\n \
-                            Powered by newsapi.org"
+                        response = "Welcome to Headline Grabber! Get the top news stories from your favorite sites - type one in, or type \"sources\" to see what sources are available \n\nPowered by newsapi.org"
 
                         send_message(sender_id, response)
 
@@ -149,6 +149,7 @@ def get_source(message_text):
                 for part in url:
                     for key in urls_dict.keys():
                         if part in key:
+                            log("{} : {}".format(part,key))
                             log("returning id: {}".format(urls_dict[key]))
                             return urls_dict[key]
 
