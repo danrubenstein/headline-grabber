@@ -134,8 +134,9 @@ def get_source(message_text):
             pass 
         else:
             log("{} : {}".format(word, first_url))
-            if first_url in urls_dict.keys():
-                return urls_dict[first_url]
+            for part in first_url:
+                if part in urls_dict.keys():
+                    return urls_dict[part]
 
     return None
 
@@ -160,7 +161,7 @@ def get_google_search_result(search_term):
         return None
 
     soup = BeautifulSoup(r.text, "html.parser")
-    first_url = soup.find('cite').text.split("/")[0]
+    first_url = soup.find('cite').text.split("/")
 
     return first_url
 
