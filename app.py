@@ -62,9 +62,13 @@ def webhook():
                     else:
                         source = get_source(message_text)
                         if source != None:
-                            get_headlines_from_source(source)
+                            headlines = get_headlines_from_source(source)
+                            if headlines == None:
+                                send_message(sender_id, "Sorry, something went wrong")
+                            else:
+                                for headline in headlines:
+                                    send_message(sender_id, headline)
                         else:
-                            
                             response = "Sorry, we couldn't find that for you - type \"help\" or \"sources\" to keep going."
                             send_message(sender_id, response)
 
@@ -172,7 +176,7 @@ def get_headlines_from_source(source):
         "sortBy" : "top"
     }
 
-    response = ""
+    headlines = []
 
     r = requests.get("https://newsapi.org/v1/articles", params=params)
     
@@ -181,11 +185,16 @@ def get_headlines_from_source(source):
             response = (str(count+1).encode("utf-8") + ") "
                 + (news_story['title']) + ": " 
                 + (news_story['url']))
+
+            headlines.append(response)
             send_message(sender_id, response)
+
+        return headlines
     else:
         log(r.status_code)
         log(r.text)
-        send_message(sender_id, "Sorry, there was a problem")
+        return None
+        
 
 
 if __name__ == '__main__':
