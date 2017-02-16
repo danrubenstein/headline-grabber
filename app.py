@@ -46,36 +46,8 @@ def webhook():
                     sender_id = messaging_event["sender"]["id"]        # the facebook ID of the person sending you the message
                     recipient_id = messaging_event["recipient"]["id"]  # the recipient's ID, which should be your page's facebook ID
                     message_text = messaging_event["message"]["text"]  # the message's text
-
-                    source = u""
-
-                    ## Various News Outlets
-
-                    source = get_source(message_text)
-
-                    if source != None:
-
-                        params = {
-                            "source": source, 
-                            "apiKey" : os.environ["NEWS_API_KEY"], 
-                            "sortBy" : "top"
-                        }
-
-                        response = ""
-
-                        r = requests.get("https://newsapi.org/v1/articles", params=params)
-                        
-                        if r.status_code == 200:
-                            for count, news_story in enumerate(r.json()['articles'][:5]):
-                                log(news_story)
-                                response = (str(count+1).encode("utf-8") + ") " + (news_story['title']) + ": " + (news_story['url']))
-                                send_message(sender_id, response)
-                        else:
-                            log(r.status_code)
-                            log(r.text)
-                            send_message(sender_id, "Sorry, there was a problem")
-
-                    elif "help" in message_text.lower():
+                    
+                    if "help" in message_text.lower():
 
                         response = "Welcome to Headline Grabber! Get the top news stories from your favorite sites - type one in, or type \"sources\" to see what sources are available \n\n \
                             Powered by newsapi.org"
@@ -85,12 +57,36 @@ def webhook():
                     elif "sources" in message_text.lower():
 
                         response = "WSJ"
+                        send_message(sender_id, response)
 
-                        send_message(sender_id, response)
                     else:
-                        
-                        response = "Sorry, we couldn't find that for you - type \"help\" or \"sources\" to keep going."
-                        send_message(sender_id, response)
+                        source = get_source(message_text)
+                        if source != None:
+
+                            params = {
+                                "source": source, 
+                                "apiKey" : os.environ["NEWS_API_KEY"], 
+                                "sortBy" : "top"
+                            }
+
+                            response = ""
+
+                            r = requests.get("https://newsapi.org/v1/articles", params=params)
+                            
+                            if r.status_code == 200:
+                                for count, news_story in enumerate(r.json()['articles'][:5]):
+                                    response = (str(count+1).encode("utf-8") + ") "
+                                        + (news_story['title']) + ": " 
+                                        + (news_story['url']))
+                                    send_message(sender_id, response)
+                            else:
+                                log(r.status_code)
+                                log(r.text)
+                                send_message(sender_id, "Sorry, there was a problem")
+                        else:
+                            
+                            response = "Sorry, we couldn't find that for you - type \"help\" or \"sources\" to keep going."
+                            send_message(sender_id, response)
 
     
 
