@@ -13,7 +13,7 @@ app = Flask(__name__)
 # valid URLS for searching for things
 sources = json.load(open("sources.json"))["sources"]
 
-urls_dict = {x["url"]: x["id"] for x in sources}
+urls_dict = {x["url"].split("/")[1]: x["id"] for x in sources}
 
 @app.route('/', methods=['GET'])
 def verify():
