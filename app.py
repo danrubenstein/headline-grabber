@@ -124,30 +124,29 @@ def log(message):  # simple wrapper for logging to stdout on heroku
 
 def get_source(message_text):
     ''' 
-    Gets the 
+    Gets the source based on the urls determined from the message parts. 
     ''' 
     words = message_text.split()
 
     for word in words:
-        first_url = get_google_search_result(word)
-        if first_url == None:
+        url_parts = get_google_search_result(word)
+        if url_parts == None:
             pass 
         else:
-            log("{} : {}".format(word, first_url))
-            for part in first_url:
-                if part in urls_dict.keys():
-                    return urls_dict[part]
+            for url in url_parts:
+                log("{} : {}".format(word, "".join(url)))
+                for part in url:
+                    if part in urls_dict.keys():
+                        return urls_dict[part]
 
     return None
 
 
 def get_google_search_result(search_term):
     '''
-    Simple function that allows for one word google searches and 
-    returns the first URL that is found 
+    Allows for one word google searches and returns the first 5 URLs that are 
+    found as split parts. 
     ''' 
-
-
     search_parameters = {
         "q" : search_term
     }
@@ -161,9 +160,10 @@ def get_google_search_result(search_term):
         return None
 
     soup = BeautifulSoup(r.text, "html.parser")
-    first_url = soup.find('cite').text.split("/")
+    urls = soup.findAll('cite')[:5]
+    url_parts = [x.text.split("/") for x in urls]
 
-    return first_url
+    return url_parts
 
 if __name__ == '__main__':
     app.run(debug=True)
