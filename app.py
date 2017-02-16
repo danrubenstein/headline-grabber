@@ -146,7 +146,7 @@ def get_source(message_text):
         else:
             for url in url_parts:
                 log("{} : {}".format(word, "".join(url)))
-                for part in url:
+                for part in [x for x in url if len(x) > 0]:
                     for key in urls_dict.keys():
                         if part in key:
                             log("{} : {}".format(part,key))
