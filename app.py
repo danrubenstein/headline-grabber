@@ -63,7 +63,6 @@ def webhook():
                         response = ""
 
                         r = requests.get("https://newsapi.org/v1/articles", params=params)
-
                         
                         if r.status_code == 200:
                             for count, news_story in enumerate(r.json()['articles'][:5]):
@@ -76,16 +75,9 @@ def webhook():
                             send_message(sender_id, "Sorry, there was a problem")
 
                     else:
-
                         send_message(sender_id, "Sorry, we couldn't find that for you")
 
-                    
-
-
-
-                    
-
-
+    
 
                 if messaging_event.get("delivery"):  # delivery confirmation
                     pass
@@ -141,7 +133,7 @@ def get_source(message_text):
         if first_url == None:
             pass 
         else:
-            log(word, first_url)
+            log("{} : {}".format(word, first_url))
             if first_url in urls:
                 return urls_dict[first_url]
 
