@@ -134,7 +134,7 @@ def get_source(message_text):
             pass 
         else:
             log("{} : {}".format(word, first_url))
-            if first_url in urls_dict:
+            if first_url in urls_dict.keys():
                 return urls_dict[first_url]
 
     return None
