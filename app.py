@@ -160,7 +160,7 @@ def get_google_search_result(search_term):
         return None
 
     soup = BeautifulSoup(r.text, "html.parser")
-    first_url = soup.find('cite').text
+    first_url = soup.find('cite').text.split("/")[0]
 
     return first_url
 
