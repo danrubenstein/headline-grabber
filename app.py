@@ -62,27 +62,7 @@ def webhook():
                     else:
                         source = get_source(message_text)
                         if source != None:
-
-                            params = {
-                                "source": source, 
-                                "apiKey" : os.environ["NEWS_API_KEY"], 
-                                "sortBy" : "top"
-                            }
-
-                            response = ""
-
-                            r = requests.get("https://newsapi.org/v1/articles", params=params)
-                            
-                            if r.status_code == 200:
-                                for count, news_story in enumerate(r.json()['articles'][:5]):
-                                    response = (str(count+1).encode("utf-8") + ") "
-                                        + (news_story['title']) + ": " 
-                                        + (news_story['url']))
-                                    send_message(sender_id, response)
-                            else:
-                                log(r.status_code)
-                                log(r.text)
-                                send_message(sender_id, "Sorry, there was a problem")
+                            get_headlines_from_source(source)
                         else:
                             
                             response = "Sorry, we couldn't find that for you - type \"help\" or \"sources\" to keep going."
@@ -146,7 +126,7 @@ def get_source(message_text):
         else:
             for url in url_parts:
                 log("{} : {}".format(word, "".join(url)))
-                for part in [x for x in url if len(x) > 0]:
+                for part in url:
                     for key in urls_dict.keys():
                         if part in key:
                             log("{} : {}".format(part,key))
@@ -180,6 +160,32 @@ def get_google_search_result(search_term):
     url_parts = [x.text.split("/") for x in urls]
 
     return url_parts
+
+def get_headlines_from_source(source):
+    ''' 
+    As advertised
+    '''
+    params = {
+        "source": source, 
+        "apiKey" : os.environ["NEWS_API_KEY"], 
+        "sortBy" : "top"
+    }
+
+    response = ""
+
+    r = requests.get("https://newsapi.org/v1/articles", params=params)
+    
+    if r.status_code == 200:
+        for count, news_story in enumerate(r.json()['articles'][:5]):
+            response = (str(count+1).encode("utf-8") + ") "
+                + (news_story['title']) + ": " 
+                + (news_story['url']))
+            send_message(sender_id, response)
+    else:
+        log(r.status_code)
+        log(r.text)
+        send_message(sender_id, "Sorry, there was a problem")
+
 
 if __name__ == '__main__':
     app.run(debug=True)
