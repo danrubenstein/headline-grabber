@@ -174,6 +174,7 @@ def get_google_search_result(search_term):
     if r.status_code != 200:
         log("Bad search query")
         log(r.status_code)
+        log(r.text)
         return None
 
     soup = BeautifulSoup(r.text, "html.parser")
