@@ -7,12 +7,15 @@ import requests
 from flask import Flask, request
 
 from bs4 import BeautifulSoup
+from constants import *
+
+from message import IncomingMessage
 
 app = Flask(__name__)
 
 # valid URLS for searching for things
 sources = json.load(open("sources.json"))["sources"]
-
+print(sources[1])
 urls_dict = {x["url"].split("/")[2]: x["id"] for x in sources}
 source_names = [x["name"] for x in sources]
 
@@ -35,7 +38,7 @@ def webhook():
 
     data = request.get_json()
     # log(data)  # you may not want to log every incoming message in production, but it's good for testing
-
+    
     if data["object"] == "page":
 
         for entry in data["entry"]:
@@ -47,41 +50,18 @@ def webhook():
                     recipient_id = messaging_event["recipient"]["id"]  
                     message_text = messaging_event["message"]["text"]  
 
-                    
-                    if "help" in message_text.lower():
+                    incoming_message = IncomingMessage(message_text)
 
-                        response = "Welcome to Headline Grabber! Get the top news stories from your favorite sites - type one in, or type \"sources\" to see what sources are available \n\nPowered by newsapi.org"
-
+                    if incoming_message.is_help():
+                        response = welcome_response
                         send_message(sender_id, response)
 
-                    elif "sources" in message_text.lower():
-
-                        response = "WSJ"
-                        send_message(sender_id, response)
+                    elif incoming_message.message_parse_ok:
+                        
+                        pass
 
                     else:
-                        source = get_source(message_text)
-                        if source != None:
-                            headlines = get_headlines_from_source(source)
-                            if headlines == None:
-                                send_message(sender_id, "Sorry, something went wrong")
-                            else:
-                                for headline in headlines:
-                                    send_message(sender_id, headline)
-                        else:
-                            response = "Sorry, we couldn't find that for you - type \"help\" or \"sources\" to keep going."
-                            send_message(sender_id, response)
-
-    
-
-                if messaging_event.get("delivery"):  # delivery confirmation
-                    pass
-
-                if messaging_event.get("optin"):  # optin confirmation
-                    pass
-
-                if messaging_event.get("postback"):  # user clicked/tapped "postback" button in earlier message
-                    pass
+                        log("!incoming_message.message_parse_ok")
 
     return "ok", 200
 
@@ -107,7 +87,7 @@ def send_message(recipient_id, message_text):
             "text": message_text
         }
     })
-    r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
+    r = requests.post(facebook_message_api_url, params=params, headers=headers, data=data)
     if r.status_code != 200:
         log(r.status_code)
         log(r.text)
@@ -115,7 +95,6 @@ def send_message(recipient_id, message_text):
 
 def log(message):  # simple wrapper for logging to stdout on heroku
     print(message)
-    # print str(message)
     sys.stdout.flush()
 
 def get_source(message_text):
@@ -141,60 +120,7 @@ def get_source(message_text):
     return None
 
 
-def get_google_search_result(search_term):
-    '''
-    Allows for one word google searches and returns the first 5 URLs that are 
-    found as split parts. 
-    ''' 
-    search_parameters = {
-        "q" : search_term
-    }
 
-    search_url = "https://www.google.com/search"
-
-    r = requests.get(search_url, params=search_parameters)
-
-    if r.status_code != 200:
-        log("Bad search query")
-        log(r.status_code)
-        log(r.text)
-        return None
-
-    soup = BeautifulSoup(r.text, "html.parser")
-    urls = soup.findAll('cite')[:5]
-    url_parts = [x.text.split("/") for x in urls]
-
-    return url_parts
-
-def get_headlines_from_source(source):
-    ''' 
-    As advertised
-    '''
-    params = {
-        "source": source, 
-        "apiKey" : os.environ["NEWS_API_KEY"], 
-        "sortBy" : "top"
-    }
-
-    headlines = []
-
-    r = requests.get("https://newsapi.org/v1/articles", params=params)
-    
-    if r.status_code == 200:
-        for count, news_story in enumerate(r.json()['articles'][:5]):
-            response = (str(count+1).encode("utf-8") + ") "
-                + (news_story['title']) + ": " 
-                + (news_story['url']))
-
-            headlines.append(response)
-            send_message(sender_id, response)
-
-        return headlines
-    else:
-        log(r.status_code)
-        log(r.text)
-        return None
-        
 
 
 if __name__ == '__main__':
