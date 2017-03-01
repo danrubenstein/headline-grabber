@@ -5,18 +5,18 @@ import json
 
 import requests
 from flask import Flask, request
-
 from bs4 import BeautifulSoup
-from constants import *
+import validators
+from urllib.parse import urlparse
 
+from constants import *
 from message import IncomingMessage
 
 app = Flask(__name__)
 
 # valid URLS for searching for things
 sources = json.load(open("sources.json"))["sources"]
-print(sources[1])
-urls_dict = {x["url"].split("/")[2]: x["id"] for x in sources}
+urls_dict = {urlparse(x["url"]).netloc: x["id"] for x in sources}
 source_names = [x["name"] for x in sources]
 
 @app.route('/', methods=['GET'])
@@ -34,14 +34,22 @@ def verify():
 @app.route('/', methods=['POST'])
 def webhook():
 
-    # endpoint for processing incoming messaging events
+    if request.is_json:
+        data = request.get_json()
+        if "object" in data.keys():
+            handle_query_facebook(data)
+        else:
+            if "query" in data.keys():
+                response = handle_query_default(data)
+                return response, 200
+    else:
+        data = request.get_data()
+        response = handle_query_default(data)
+        return response, 200
 
-    log(request)
-    log(request)
-    data = request.get_json()
-    log(data)  # you may not want to log every incoming message in production, but it's good for testing
+    return "ok", 200
 
-
+def handle_query_facebook(data):
 
     if data["object"] == "page":
 
@@ -54,23 +62,115 @@ def webhook():
                     recipient_id = messaging_event["recipient"]["id"]  
                     message_text = messaging_event["message"]["text"]  
 
-                    incoming_message = IncomingMessage(message_text)
+                    result, contents = handle_message_text(message_text)
+                    send_response_type(result, contents, facebook_url, recipient_id)
 
-                    if incoming_message.is_help():
-                        response = welcome_response
-                        send_message(sender_id, response)
+                else:
+                    log("handle_facebook_message(): unexpected messagging_event")
 
-                    elif incoming_message.message_parse_ok:
-                        
-                        pass
+def handle_query_default(data):
 
-                    else:
-                        log("!incoming_message.message_parse_ok")
+    query = data['query']
+    result, contents = handle_message_text(query)
+    
+    if result == "ok":
+        response = "\n".join(contents)
 
-    return "ok", 200
+    elif result == "source_not_found":
+        response = source_not_found_response
+
+    elif result == "help":
+        response = welcome_response
+
+    elif result == "sources":
+        response = "Sources: " + ", ".join(urls_dict.values())
+
+    elif result == "message_parse_failure":
+        response = message_parse_failure_response
+
+    else:
+        log("Unexpected response from handle_message_text()")
+        response = wrong_response
+    
+    return response
 
 
-def send_message(recipient_id, message_text):
+def send_response_medium(response, recipient, sender_id=None):
+    '''
+    Either send via Facebook API or as direct POST request.
+    '''
+    if sender_id == None:
+        send_response_generic(recipient, response)
+    else:
+        send_response_facebook(recipient_id, response)
+
+    return 
+
+def send_response_type(result, contents, recipient, recipient_id=None):
+    ''' 
+    Determine the response to send from the result
+    '''
+    if result == "ok":
+        for headline in contents:
+            response = headline
+            send_response_medium(response, recipient, recipient_id)
+
+    elif result == "source_not_found":
+        response = source_not_found_response
+        send_response_medium(response, recipient, recipient_id)
+
+    elif result == "help":
+        response = welcome_response
+        send_response_medium(response, recipient, recipient_id)
+
+    elif result == "sources":
+        response = "Sources: " + ",".join(urls_dict.values())
+        send_response_medium(response, recipient, recipient_id)
+
+    elif result == "message_parse_failure":
+        response = message_parse_failure_response
+        send_response_medium(response, recipient, recipient_id)
+
+    else:
+        log("Unexpected response from handle_message_text()")
+        response = wrong_response
+        send_response_medium(response, recipient, recipient_id)
+
+    return 
+
+
+
+def handle_message_text(message_text):
+    incoming_message = IncomingMessage(message_text)
+
+    if incoming_message.is_help():
+        return ("help", None)
+    elif incoming_message.is_sources():
+        return ("sources", None)
+
+    elif incoming_message.message_parse_ok:
+        
+        if incoming_message.source_requested in urls_dict.keys():
+            id = urls_dict[incoming_message.source_requested]
+        elif incoming_message.source_requested in urls_dict.values():
+            id = incoming_message.source_requested
+        else:
+            url = get_google_search_result(incoming_message.source_requested)
+            if url in urls_dict:
+                id = urls_dict[url]
+            else:
+                id = None
+        
+        if id:
+            x = get_headlines_from_source(id, incoming_message.num_requested)   
+            return ("ok", x)
+        else:
+            return ("source_not_found", None)
+
+    else:
+        return ("message_parse_failure", None)
+
+def send_response_facebook(recipient_id, message_text):
 
     try:
         log("sending message to {}: {}".format(recipient_id, message_text))
@@ -97,35 +197,88 @@ def send_message(recipient_id, message_text):
         log(r.text)
 
 
+def send_response_generic(recipient_url, message_text):
+    try:
+        log("sending message to {}: {}".format(recipient_url, message_text))
+    except UnicodeEncodeError:
+        log("unicode decode error")
+    headers = {
+        "Content-Type": "application/json"
+    }
+    data = json.dumps({
+        "text": message_text
+    })
+    r = requests.post(recipient_url, headers=headers, data=data)
+    if r.status_code != 200:
+        log(r.status_code)
+        log(r.text)
+
+
+
+
 def log(message):  # simple wrapper for logging to stdout on heroku
     print(message)
     sys.stdout.flush()
 
-def get_source(message_text):
+def get_google_search_result(search_term):
+
+    '''
+    Returns the first 5 search result URLs that are affiliated with a search term
+    The strategy is to take the most common url that is not google.com
+    that comes back from a google search result of that query.
+
+    Returns:
+        - (or None, on failure)
     ''' 
-    Gets the source based on the urls determined from the message parts. 
+
+    #slugify the search term 
+    concatenated_search_term = search_term.replace(' ', '+')
+    search_parameters = {
+        "q" : search_term
+    }
+
+    r = requests.get(google_search_url, params=search_parameters)
+    if r.status_code != 200:
+        log("Bad search query")
+        log(r.status_code)
+        log(r.text)
+        return None
+
+    # Get the urls
+    soup = BeautifulSoup(r.text, "html.parser")
+    urls = soup.findAll("a")
+    validated_urls = [urlparse(x['href'].strip("/url?q=")).netloc for x in urls]
+    validated_urls_2 = [x for x in validated_urls if "google" not in x and len(x) > 0]
+    most_common_url = max(set(validated_urls_2), key=validated_urls_2.count)
+    log("{} , {}".format(search_term, most_common_url))
+
+    return most_common_url
+
+def get_headlines_from_source(source, num_requested):
+    
     ''' 
-    words = message_text.split()
+    Uses the newspi protocol to get the headlines from that headline
+    '''
 
-    for word in words:
-        url_parts = get_google_search_result(word)
-        if url_parts == None:
-            pass 
-        else:
-            for url in url_parts:
-                log("{} : {}".format(word, "".join(url)))
-                for part in url:
-                    for key in urls_dict.keys():
-                        if part in key:
-                            log("{} : {}".format(part,key))
-                            log("returning id: {}".format(urls_dict[key]))
-                            return urls_dict[key]
+    params = {
+        "source": source, 
+        "apiKey" : os.environ["NEWS_API_KEY"], 
+        "sortBy" : "top"
+    }
 
-    return None
+    headlines = []
 
-
-
-
+    r = requests.get(newsapi_url, params=params)
+    
+    if r.status_code == 200:
+        for count, news_story in enumerate(r.json()['articles'][:num_requested]):
+            response = "{}) {}: {}".format(str(count+1), news_story['title'], news_story['url'])
+            headlines.append(response)
+        return headlines
+    else:
+        log(r.status_code)
+        log(r.text)
+        return None
 
 if __name__ == '__main__':
     app.run(debug=True)

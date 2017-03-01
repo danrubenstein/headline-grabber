@@ -1,6 +1,5 @@
 import re 
 from constants import message_full_regex, message_default_regex
-from api import get_google_search_result
 
 class IncomingMessage:
 	''' 
@@ -53,18 +52,11 @@ class IncomingMessage:
 		else:
 			return False
 
-class NewsResponse:
-	
-	'''
-	Crafted off of acceptable incoming messages only 
-	'''
-
-	def __init__(self, incoming_message):
-		
-		# Defaults
-		self.source_found = False 
-		self.articles_requested = False 
-		self.articles_found = False 
+	def is_sources(self):
+		if "source" in self.message:
+			return True 
+		else:
+			return False
 
 
 
