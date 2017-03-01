@@ -15,7 +15,7 @@ from message import IncomingMessage
 app = Flask(__name__)
 
 # valid URLS for searching for things
-sources = json.load(open("sources.json"))["sources"]
+sources = json.load(open("static/sources.json"))["sources"]
 urls_dict = {urlparse(x["url"]).netloc: x["id"] for x in sources}
 source_names = [x["name"] for x in sources]
 
