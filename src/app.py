@@ -40,7 +40,7 @@ def webhook():
             handle_query_facebook(data)
         else:
             if "query" in data.keys():
-                response = handle_query_default(data)
+                response = handle_query_default(data['query'])
                 return response, 200
     else:
         data = request.get_data()
@@ -62,85 +62,14 @@ def handle_query_facebook(data):
                     recipient_id = messaging_event["recipient"]["id"]  
                     message_text = messaging_event["message"]["text"]  
 
-                    result, contents = handle_message_text(message_text)
-                    send_response_type(result, contents, facebook_message_api_url, recipient_id)
+                    response = handle_query_default(message_text)
+                    send_response_facebook(sender_id, response)
 
                 else:
                     log("handle_facebook_message(): unexpected messagging_event")
 
-def handle_query_default(data):
-
-    query = data['query']
-    result, contents = handle_message_text(query)
-    
-    if result == "ok":
-        response = "\n".join(contents)
-
-    elif result == "source_not_found":
-        response = source_not_found_response
-
-    elif result == "help":
-        response = welcome_response
-
-    elif result == "sources":
-        response = "Sources: " + ", ".join(urls_dict.values())
-
-    elif result == "message_parse_failure":
-        response = message_parse_failure_response
-
-    else:
-        log("Unexpected response from handle_message_text()")
-        response = wrong_response
-    
-    return response
-
-
-def send_response_medium(response, recipient, sender_id=None):
-    '''
-    Either send via Facebook API or as direct POST request.
-    '''
-    if sender_id == None:
-        send_response_generic(recipient, response)
-    else:
-        send_response_facebook(recipient_id, response)
-
-    return 
-
-def send_response_type(result, contents, recipient, recipient_id=None):
-    ''' 
-    Determine the response to send from the result
-    '''
-    if result == "ok":
-        for headline in contents:
-            response = headline
-            send_response_medium(response, recipient, recipient_id)
-
-    elif result == "source_not_found":
-        response = source_not_found_response
-        send_response_medium(response, recipient, recipient_id)
-
-    elif result == "help":
-        response = welcome_response
-        send_response_medium(response, recipient, recipient_id)
-
-    elif result == "sources":
-        response = "Sources: " + ",".join(urls_dict.values())
-        send_response_medium(response, recipient, recipient_id)
-
-    elif result == "message_parse_failure":
-        response = message_parse_failure_response
-        send_response_medium(response, recipient, recipient_id)
-
-    else:
-        log("Unexpected response from handle_message_text()")
-        response = wrong_response
-        send_response_medium(response, recipient, recipient_id)
-
-    return 
-
-
-
 def handle_message_text(message_text):
+
     incoming_message = IncomingMessage(message_text)
 
     if incoming_message.is_help():
@@ -170,6 +99,35 @@ def handle_message_text(message_text):
     else:
         return ("message_parse_failure", None)
 
+
+def handle_query_default(message_text):
+    ''' 
+    Constructs a response based on the message
+    '''
+    result, contents = handle_message_text(query)
+    
+    if result == "ok":
+        response = "\n".join(contents)
+
+    elif result == "source_not_found":
+        response = source_not_found_response
+
+    elif result == "help":
+        response = welcome_response
+
+    elif result == "sources":
+        response = "Sources: " + ", ".join(urls_dict.values())
+
+    elif result == "message_parse_failure":
+        response = message_parse_failure_response
+
+    else:
+        log("Unexpected response from handle_message_text()")
+        response = wrong_response
+    
+    return response
+
+
 def send_response_facebook(recipient_id, message_text):
 
     try:
@@ -196,29 +154,6 @@ def send_response_facebook(recipient_id, message_text):
         log(r.status_code)
         log(r.text)
 
-
-def send_response_generic(recipient_url, message_text):
-    try:
-        log("sending message to {}: {}".format(recipient_url, message_text))
-    except UnicodeEncodeError:
-        log("unicode decode error")
-    headers = {
-        "Content-Type": "application/json"
-    }
-    data = json.dumps({
-        "text": message_text
-    })
-    r = requests.post(recipient_url, headers=headers, data=data)
-    if r.status_code != 200:
-        log(r.status_code)
-        log(r.text)
-
-
-
-
-def log(message):  # simple wrapper for logging to stdout on heroku
-    print(message)
-    sys.stdout.flush()
 
 def get_google_search_result(search_term):
 
@@ -254,6 +189,7 @@ def get_google_search_result(search_term):
 
     return most_common_url
 
+
 def get_headlines_from_source(source, num_requested):
     
     ''' 
@@ -280,8 +216,15 @@ def get_headlines_from_source(source, num_requested):
         log(r.text)
         return None
 
+
+def log(message): 
+    print(message)
+    sys.stdout.flush()
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
