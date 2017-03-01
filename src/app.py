@@ -104,7 +104,7 @@ def handle_query_default(message_text):
     ''' 
     Constructs a response based on the message
     '''
-    result, contents = handle_message_text(query)
+    result, contents = handle_message_text(message_text)
     
     if result == "ok":
         response = "\n".join(contents)
