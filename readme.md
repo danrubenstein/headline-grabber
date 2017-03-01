@@ -31,28 +31,13 @@ There are also "sources" and "help" commands.
 
 ### Protocols
 
-Currently, Headline Grabber exists as a Facebook bot, and as a command line utility. 
+Currently, Headline Grabber exists as a Facebook bot. 
 
-#### As a command line utility 
-
-Set up with:
-```
-curl -o client.py https://raw.githubusercontent.com/danrubenstein/headline-grabber/master/
-echo "alias news='PATH/TO/client.py'" >> ~./bash_profile
-```
-
-And then use!
-```
-~: $ news top 5 nyt
-1) Fact Check: Trump’s First Address to Congress: http://www.nytimes.com/interactive/2017/02/28/us/politics/fact-check-trump-congress-address.html?src=rec&amp;recp=0
-2) Trump, in Optimistic Address, Asks Congress to End ‘Trivial Fights’: http://www.nytimes.com/2017/02/28/us/politics/trump-address-congress.html?src=rec&amp;recp=1
-3) Colon and Rectal Cancers Rising in Young People: http://www.nytimes.com/2017/02/28/well/live/colon-and-rectal-cancers-rising-in-young-people.html?src=rec&amp;recp=2
-4) Trump’s Speech to Congress and Democrats’ Response: Video and Analysis: http://www.nytimes.com/interactive/2017/02/28/us/politics/trump-congress-address-live-video-analysis.html?src=rec&amp;recp=3
-5) Trump Addressed Joint Session of Congress For the First Time: http://www.nytimes.com/2017/02/28/us/politics/trump-address-joint-session-congress.html?src=rec&amp;recp=4
-~: $ 
-```
+A command line utility is in development.
 
 #### Facebook Bot
+
+- Screen caps to come
 
 #### Dependencies 
 
@@ -65,5 +50,5 @@ And then use!
 ### To-dos
 
 - Testing. Lots of testing.
-- Implementation 
+- Implementation of command line utility.
 
