@@ -63,7 +63,7 @@ def handle_query_facebook(data):
                     message_text = messaging_event["message"]["text"]  
 
                     result, contents = handle_message_text(message_text)
-                    send_response_type(result, contents, facebook_url, recipient_id)
+                    send_response_type(result, contents, facebook_message_api_url, recipient_id)
 
                 else:
                     log("handle_facebook_message(): unexpected messagging_event")
