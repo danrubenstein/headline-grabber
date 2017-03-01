@@ -62,10 +62,13 @@ def handle_query_facebook(data):
                     recipient_id = messaging_event["recipient"]["id"]  
                     message_text = messaging_event["message"]["text"]  
 
-                    response = handle_query_default(message_text)
-                    responses = response.split("\n")
-                    for x in responses:
-                        send_response_facebook(sender_id, x)
+                    result, response = handle_query_default(message_text)
+                    if result == "ok":
+                        responses = response.split("\n")
+                        for x in responses:
+                            send_response_facebook(sender_id, x)
+                    else:
+                        send_response_facebook(response)
 
                 else:
                     log("handle_facebook_message(): unexpected messagging_event")
@@ -127,7 +130,7 @@ def handle_query_default(message_text):
         log("Unexpected response from handle_message_text()")
         response = wrong_response
     
-    return response
+    return (result, response)
 
 
 def send_response_facebook(recipient_id, message_text):
@@ -148,7 +151,7 @@ def send_response_facebook(recipient_id, message_text):
             "id": recipient_id
         },
         "message": {
-            "text": message_text
+            "text": message_text[:600]
         }
     })
     r = requests.post(facebook_message_api_url, params=params, headers=headers, data=data)
