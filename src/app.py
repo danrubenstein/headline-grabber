@@ -72,6 +72,8 @@ def handle_query_facebook(data):
                     sender_id = messaging_event["sender"]["id"] 
                     message_text = messaging_event["message"]["text"]  
                     result, response = handle_query_default(message_text)
+
+                    log("{} {} {}".format(sender_id, message_text, result))
                     if result in ["ok", "sources"]:
                         responses = response.split("\n")
                         for x in responses:
@@ -178,10 +180,10 @@ def send_response_facebook(recipient_id, message_text):
     Returns:
         - The status code of the response
     '''
-    try:
-        log("sending message to {}: {}".format(recipient_id, message_text))
-    except UnicodeEncodeError:
-        log("unicode decode error")
+    # try:
+    #     log("sending message to {}: {}".format(recipient_id, message_text))
+    # except UnicodeEncodeError:
+    #     log("unicode decode error")
 
     params = {
         "access_token": os.environ["PAGE_ACCESS_TOKEN"]
