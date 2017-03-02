@@ -15,6 +15,12 @@ from constants import facebook_message_api_url, google_search_url, newsapi_url, 
 from message import IncomingMessage
 
 app = Flask(__name__)
+sources = json.load(open("static/sources.json"))["sources"]
+CATEGORIES = [x["category"] for x in sources]
+CATEGORIES_DICT = {x : ", ".join([y["id"] for y in sources if y["category"] == x]) for x in CATEGORIES}
+
+URLS_DICT = {urlparse(x["url"]).netloc: x["id"] for x in sources}
+SOURCE_NAMES = [x["name"] for x in sources]
 
 @app.route('/', methods=['GET'])
 def verify():
@@ -275,13 +281,7 @@ def log(message):
 
 
 if __name__ == '__main__':
-    sources = json.load(open("static/sources.json"))["sources"]
-
-    CATEGORIES = [x["category"] for x in sources]
-    CATEGORIES_DICT = {x : ", ".join([y["id"] for y in sources if y["category"] == x]) for x in CATEGORIES}
-
-    URLS_DICT = {urlparse(x["url"]).netloc: x["id"] for x in sources}
-    SOURCE_NAMES = [x["name"] for x in sources]
+    
     app.run(debug=True)
 
 
