@@ -16,6 +16,10 @@ app = Flask(__name__)
 
 # valid URLS for searching for things
 sources = json.load(open("static/sources.json"))["sources"]
+
+categories = [x["category"] for x in sources]
+categories_dict = {x : ", ".join([y for y in sources if y["category"] == x]) for x in categories}
+
 urls_dict = {urlparse(x["url"]).netloc: x["id"] for x in sources}
 source_names = [x["name"] for x in sources]
 
@@ -64,7 +68,7 @@ def handle_query_facebook(data):
                     message_text = messaging_event["message"]["text"]  
 
                     result, response = handle_query_default(message_text)
-                    if result == "ok":
+                    if result in ["ok", "sources"]:
                         responses = response.split("\n")
                         for x in responses:
                             send_response_facebook(sender_id, x)
@@ -122,7 +126,8 @@ def handle_query_default(message_text):
         response = welcome_response
 
     elif result == "sources":
-        response = "Sources: " + ", ".join(urls_dict.values())
+        response = "Sources: \n" + 
+            "\n".join([x + ": " + categories_dict[x] for x in categories])
 
     elif result == "message_parse_failure":
         response = message_parse_failure_response
@@ -161,7 +166,6 @@ def send_response_facebook(recipient_id, message_text):
 
 
 def get_google_search_result(search_term):
-
     '''
     Returns the first 5 search result URLs that are affiliated with a search term
     The strategy is to take the most common url that is not google.com
@@ -190,17 +194,15 @@ def get_google_search_result(search_term):
     validated_urls = [urlparse(x['href'].strip("/url?q=")).netloc for x in urls]
     validated_urls_2 = [x for x in validated_urls if "google" not in x and len(x) > 0]
     most_common_url = max(set(validated_urls_2), key=validated_urls_2.count)
-    log("{} , {}".format(search_term, most_common_url))
+    # log("{} , {}".format(search_term, most_common_url))
 
     return most_common_url
 
 
 def get_headlines_from_source(source, num_requested):
-    
     ''' 
     Uses the newspi protocol to get the headlines from that headline
     '''
-
     params = {
         "source": source, 
         "apiKey" : os.environ["NEWS_API_KEY"], 
