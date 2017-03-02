@@ -40,11 +40,12 @@ def webhook():
             handle_query_facebook(data)
         else:
             if "query" in data.keys():
-                response = handle_query_default(data['query'])
+                result, response = handle_query_default(data['query'])
                 return response, 200
+                # return response, 200
     else:
         data = request.get_data()
-        response = handle_query_default(data)
+        result, response = handle_query_default(data)
         return response, 200
 
     return "ok", 200
@@ -68,7 +69,7 @@ def handle_query_facebook(data):
                         for x in responses:
                             send_response_facebook(sender_id, x)
                     else:
-                        send_response_facebook(response)
+                        send_response_facebook(sender_id, response)
 
                 else:
                     log("handle_facebook_message(): unexpected messagging_event")
