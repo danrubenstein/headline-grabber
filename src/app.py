@@ -16,7 +16,7 @@ from message import IncomingMessage
 
 app = Flask(__name__)
 sources = json.load(open("static/sources.json"))["sources"]
-CATEGORIES = [x["category"] for x in sources]
+CATEGORIES = (list(set([x["category"] for x in sources])))
 CATEGORIES_DICT = {x : ", ".join([y["id"] for y in sources if y["category"] == x]) for x in CATEGORIES}
 
 URLS_DICT = {urlparse(x["url"]).netloc: x["id"] for x in sources}
