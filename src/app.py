@@ -18,7 +18,7 @@ app = Flask(__name__)
 sources = json.load(open("static/sources.json"))["sources"]
 
 categories = [x["category"] for x in sources]
-categories_dict = {x : ", ".join([y for y in sources if y["category"] == x]) for x in categories}
+categories_dict = {x : ", ".join([y["id"] for y in sources if y["category"] == x]) for x in categories}
 
 urls_dict = {urlparse(x["url"]).netloc: x["id"] for x in sources}
 source_names = [x["name"] for x in sources]
@@ -126,8 +126,7 @@ def handle_query_default(message_text):
         response = welcome_response
 
     elif result == "sources":
-        response = "Sources: \n" + 
-            "\n".join([x + ": " + categories_dict[x] for x in categories])
+        response = "Sources: \n" + "\n".join([x + ": " + categories_dict[x] for x in categories])
 
     elif result == "message_parse_failure":
         response = message_parse_failure_response
