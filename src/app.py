@@ -1,27 +1,20 @@
+'''
+app.py. Most everything is in here, except message.py
+'''
 # -*- coding: utf-8 -*-
 import os
 import sys
 import json
+from urllib.parse import urlparse
 
 import requests
 from flask import Flask, request
 from bs4 import BeautifulSoup
-import validators
-from urllib.parse import urlparse
 
-from constants import *
+from constants import facebook_message_api_url, google_search_url, newsapi_url, welcome_response, wrong_response, source_not_found_response, message_parse_failure_response
 from message import IncomingMessage
 
 app = Flask(__name__)
-
-# valid URLS for searching for things
-sources = json.load(open("static/sources.json"))["sources"]
-
-categories = [x["category"] for x in sources]
-categories_dict = {x : ", ".join([y["id"] for y in sources if y["category"] == x]) for x in categories}
-
-urls_dict = {urlparse(x["url"]).netloc: x["id"] for x in sources}
-source_names = [x["name"] for x in sources]
 
 @app.route('/', methods=['GET'])
 def verify():
@@ -37,25 +30,32 @@ def verify():
 
 @app.route('/', methods=['POST'])
 def webhook():
-
     if request.is_json:
         data = request.get_json()
         if "object" in data.keys():
             handle_query_facebook(data)
         else:
             if "query" in data.keys():
-                result, response = handle_query_default(data['query'])
+                _, response = handle_query_default(data['query'])
                 return response, 200
-                # return response, 200
     else:
         data = request.get_data()
-        result, response = handle_query_default(data)
+        _, response = handle_query_default(data)
         return response, 200
 
     return "ok", 200
 
 def handle_query_facebook(data):
+    '''
+    handle_query_facebook is the handler for POST requests 
+    that come via the Facebook webhook
 
+    Parameters:
+        - data - the body of the POST request (json)
+
+    Returns:
+        - None
+    '''
     if data["object"] == "page":
 
         for entry in data["entry"]:
@@ -63,8 +63,7 @@ def handle_query_facebook(data):
 
                 if messaging_event.get("message"):  # someone sent us a message
 
-                    sender_id = messaging_event["sender"]["id"]
-                    recipient_id = messaging_event["recipient"]["id"]  
+                    sender_id = messaging_event["sender"]["id"] 
                     message_text = messaging_event["message"]["text"]  
 
                     result, response = handle_query_default(message_text)
@@ -77,8 +76,21 @@ def handle_query_facebook(data):
 
                 else:
                     log("handle_facebook_message(): unexpected messagging_event")
+    return 
 
 def handle_message_text(message_text):
+    '''
+    handle_message_text takes the query that has been generated against the 
+    bot and returns the status and content associated with that query. 
+
+    Args:
+        - message_text
+
+    Returns:
+        - (result, content)
+
+    Note: if the result is not "ok", content will be None.
+    '''
 
     incoming_message = IncomingMessage(message_text)
 
@@ -89,14 +101,14 @@ def handle_message_text(message_text):
 
     elif incoming_message.message_parse_ok:
         
-        if incoming_message.source_requested in urls_dict.keys():
-            id = urls_dict[incoming_message.source_requested]
-        elif incoming_message.source_requested in urls_dict.values():
+        if incoming_message.source_requested in URLS_DICT.keys():
+            id = URLS_DICT[incoming_message.source_requested]
+        elif incoming_message.source_requested in URLS_DICT.values():
             id = incoming_message.source_requested
         else:
             url = get_google_search_result(incoming_message.source_requested)
-            if url in urls_dict:
-                id = urls_dict[url]
+            if url in URLS_DICT:
+                id = URLS_DICT[url]
             else:
                 id = None
         
@@ -112,7 +124,17 @@ def handle_message_text(message_text):
 
 def handle_query_default(message_text):
     ''' 
-    Constructs a response based on the message
+    handle_query_default is the standard handler for a message query. Based on 
+    the result of handle_message_text, handle_query_default returns a (result, 
+    response) tuple that contains either the source-specific response (the 
+    headlines) or the appropriate error/utility message. 
+
+    Args:
+        - message_text
+
+    Returns
+        - (result, response)
+
     '''
     result, contents = handle_message_text(message_text)
     
@@ -126,7 +148,7 @@ def handle_query_default(message_text):
         response = welcome_response
 
     elif result == "sources":
-        response = "Sources: \n" + "\n".join([x + ": " + categories_dict[x] for x in categories])
+        response = "Sources: \n" + "\n".join([x + ": " + CATEGORIES_DICT[x] for x in CATEGORIES])
 
     elif result == "message_parse_failure":
         response = message_parse_failure_response
@@ -139,7 +161,18 @@ def handle_query_default(message_text):
 
 
 def send_response_facebook(recipient_id, message_text):
+    ''' 
+    send_response_facebook sends a POST request to the 
+    Facebook API which returns to the user as a chat 
+    message.
 
+    Args:
+        - recipient_id - the target for the Facebook API
+        - message_text
+
+    Returns:
+        - The status code of the response
+    '''
     try:
         log("sending message to {}: {}".format(recipient_id, message_text))
     except UnicodeEncodeError:
@@ -163,47 +196,57 @@ def send_response_facebook(recipient_id, message_text):
     if r.status_code != 200:
         log("{}: {}".format(r.status_code, r.text))
 
+    return r.status_code
+
 
 def get_google_search_result(search_term):
     '''
-    Returns the first 5 search result URLs that are affiliated with a search term
-    The strategy is to take the most common url that is not google.com
-    that comes back from a google search result of that query.
+    If the search query is not recognized by previous checks, 
+    get_google_search_result uses the Google Search API to grab the text
+    of a search for that term, and that takes the most common domain 
+    on that search page.
+
+    Args:
+        - search_term
 
     Returns:
-        - (or None, on failure)
+        - most_common_url (None if bad query) 
     ''' 
 
-    #slugify the search term 
     concatenated_search_term = search_term.replace(' ', '+')
     search_parameters = {
-        "q" : search_term
+        "q" : concatenated_search_term
     }
 
     r = requests.get(google_search_url, params=search_parameters)
     if r.status_code != 200:
-        log("Bad search query")
         log(r.status_code)
         log(r.text)
         return None
 
-    # Get the urls
     soup = BeautifulSoup(r.text, "html.parser")
     urls = soup.findAll("a")
     validated_urls = [urlparse(x['href'].strip("/url?q=")).netloc for x in urls]
     validated_urls_2 = [x for x in validated_urls if "google" not in x and len(x) > 0]
     most_common_url = max(set(validated_urls_2), key=validated_urls_2.count)
-    # log("{} , {}".format(search_term, most_common_url))
 
     return most_common_url
 
 
 def get_headlines_from_source(source, num_requested):
     ''' 
-    Uses the newspi protocol to get the headlines from that headline
+    get_headlines_from_source uses the newspi protocol to get the articles, headlines, and url from that source. 
+
+    Args:
+        - source (this must be an accepted newsapi source)
+        - num_requested
+
+    Returns:
+        - headlines, a list of strings of the form
+            "n) <headline>: <article_url>"
     '''
     params = {
-        "source": source, 
+        "source" : source, 
         "apiKey" : os.environ["NEWS_API_KEY"], 
         "sortBy" : "top"
     }
@@ -224,11 +267,21 @@ def get_headlines_from_source(source, num_requested):
 
 
 def log(message): 
+    '''
+    Simple logging function for Heroku logs
+    '''
     print(message)
     sys.stdout.flush()
 
 
 if __name__ == '__main__':
+    sources = json.load(open("static/sources.json"))["sources"]
+
+    CATEGORIES = [x["category"] for x in sources]
+    CATEGORIES_DICT = {x : ", ".join([y["id"] for y in sources if y["category"] == x]) for x in CATEGORIES}
+
+    URLS_DICT = {urlparse(x["url"]).netloc: x["id"] for x in sources}
+    SOURCE_NAMES = [x["name"] for x in sources]
     app.run(debug=True)
 
 

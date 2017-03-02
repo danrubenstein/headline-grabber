@@ -2,7 +2,7 @@
 
 This is a Flask application built off of [this tutorial](https://blog.hartleybrody.com/fb-messenger-bot/) that takes the headlines from a bunch of places and puts them in front of you. It's currently implemented both as a Facebook bot (Headline Grabber) and as a command line application. 
 
-This data is taken from [newsapi][https://newsapi.org/].
+This data is taken from [newsapi](https://newsapi.org/).
 
 ### Using Headline Grabber 
 
@@ -42,10 +42,10 @@ A command line utility is in development.
 #### Dependencies 
 
 ##### Client
-- [Requests][http://docs.python-requests.org/en/master/]
+- [Requests](http://docs.python-requests.org/en/master/)
 
 ##### Server
-- See [requirements.txt][./requirements.txt]
+- See [requirements.txt](./requirements.txt)
 
 ### To-dos
 
