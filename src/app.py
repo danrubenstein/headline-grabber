@@ -71,7 +71,6 @@ def handle_query_facebook(data):
 
                     sender_id = messaging_event["sender"]["id"] 
                     message_text = messaging_event["message"]["text"]  
-
                     result, response = handle_query_default(message_text)
                     if result in ["ok", "sources"]:
                         responses = response.split("\n")
@@ -79,10 +78,10 @@ def handle_query_facebook(data):
                             send_response_facebook(sender_id, x)
                     else:
                         send_response_facebook(sender_id, response)
-
                 else:
-                    log("handle_facebook_message(): unexpected messagging_event")
-    return 
+                    pass
+                    
+
 
 def handle_message_text(message_text):
     '''
