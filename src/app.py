@@ -96,7 +96,7 @@ def handle_message_text(message_text):
             else:
                 id = None
         
-        if id:
+        if id != None:
             x = get_headlines_from_source(id, incoming_message.num_requested)   
             return ("ok", x)
         else:
@@ -152,13 +152,12 @@ def send_response_facebook(recipient_id, message_text):
             "id": recipient_id
         },
         "message": {
-            "text": message_text[:600]
+            "text": message_text
         }
     })
     r = requests.post(facebook_message_api_url, params=params, headers=headers, data=data)
     if r.status_code != 200:
-        log(r.status_code)
-        log(r.text)
+        log("{}: {}".format(r.status_code, r.text))
 
 
 def get_google_search_result(search_term):
