@@ -103,6 +103,7 @@ def handle_message_text(message_text):
 
     if incoming_message.is_help():
         return ("help", None)
+    
     elif incoming_message.is_sources():
         return ("sources", None)
 

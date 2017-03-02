@@ -10,5 +10,4 @@ headers = {
 
 r = requests.post("https://damp-beach-82114.herokuapp.com/", headers=headers,json={'query':query})
 
-print(r.headers)
 print(r.text)
