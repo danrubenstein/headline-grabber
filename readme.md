@@ -1,8 +1,12 @@
 # Headline Grabber:
 
+### Status update (03/29/17)
+
+The Headline Grabber Facebook page has been discontinued.
+
 ## Intro 
 
-This is a Flask application built off of [this tutorial](https://blog.hartleybrody.com/fb-messenger-bot/) that takes the headlines from a bunch of places and puts them in front of you. It's currently implemented both as a Facebook bot (Headline Grabber) and as a command line application. 
+This is a Flask application built off of [this tutorial](https://blog.hartleybrody.com/fb-messenger-bot/) that takes the headlines from a bunch of places and puts them in front of you. It's currently implemented as a command line utility. 
 
 Information is taken from the [newsapi](https://newsapi.org/) API.
 
@@ -33,7 +37,9 @@ There are also "sources" and "help" commands.
 
 ### Protocols
 
-### [Facebook Bot](https://www.facebook.com/Headline-Grabber-248841565559881)
+### DISCONTINUED: [Facebook Bot](https://www.facebook.com/Headline-Grabber-248841565559881)
+
+*This description exists for historical curiosity.*
 
 You can interact with Headline Grabber by sending it a message. There's no present intention of using the Facebook page other than for its chat functionality.
 
@@ -50,7 +56,7 @@ The same queries that are made in the Facebook bot can also be made from the ter
 
 ```
 curl -o ~/client.py https://raw.githubusercontent.com/danrubenstein/headline-grabber/master/client.py
-echo "alias news=~/client.py" >> ./.bash_profile
+echo "alias news=~/client.py" >> ~/.bash_profile
 ```
 
 Usage is pretty much the same:
